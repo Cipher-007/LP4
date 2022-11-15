@@ -1,0 +1,839 @@
+____________________________________________________________________________________________________________________________
+|                                                        Assignment 2                                                       |
+| Implementing Feedforward neural networks with Keras and TensorFlow                                                        |
+|    a. Import the necessary packages                                                                                       |
+|    b. Load the training and testing data (MNIST/CIFAR10)                                                                  |
+|    c. Define the network architecture using Keras                                                                         |
+|    d. Train the model using SGD                                                                                           |
+|    e. Evaluate the network                                                                                                |
+|    f. Plot the training loss and accuracy                                                                                 |
+|___________________________________________________________________________________________________________________________|
+
+#importing necessary libraries
+import tensorflow as tf
+from tensorflow import keras
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+
+
+
+#import dataset and split into train and test data
+mnist = tf.keras.datasets.mnist
+(x_train, y_train), (x_test, y_test) = mnist.load_data()
+
+
+
+plt.matshow(x_train[1])
+
+
+
+plt.imshow(-x_train[0], cmap="gray")
+
+
+
+
+#normalization
+x_train = x_train / 255
+x_test = x_test / 255
+
+
+
+model = keras.Sequential([
+keras.layers.Flatten(input_shape=(28, 28)),
+keras.layers.Dense(128, activation="relu"),
+keras.layers.Dense(10, activation="softmax")
+])
+
+model.summary()
+
+
+
+model.compile(optimizer="sgd",
+loss="sparse_categorical_crossentropy",
+metrics=['accuracy'])
+
+
+
+history=model.fit(x_train,
+y_train,validation_data=(x_test,y_test),epochs=10)
+
+
+
+test_loss,test_acc=model.evaluate(x_test,y_test)
+print("Loss=%.3f" %test_loss)
+print("Accuracy=%.3f" %test_acc)
+
+
+
+n=random.randint(0,9999)
+plt.imshow(x_test[n])
+plt.show()
+
+
+
+predicted_value=model.predict(x_test)
+plt.imshow(x_test[n])
+plt.show()
+
+print(predicted_value[n])
+
+
+
+# history.history()
+history.history.keys()
+# dict_keys(['loss', 'accuracy', 'val_loss', 'val_accuracy'])
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('model accuracy')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['Train', 'Validation'], loc='upper left')
+plt.show()
+
+
+
+
+# history.history()
+history.history.keys()
+# dict_keys(['loss', 'accuracy', 'val_loss', 'val_accuracy'])
+
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('model loss')
+plt.ylabel('loss')
+plt.xlabel('epoch')
+plt.legend(['Train', 'Validation'], loc='upper left')
+plt.show()
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+____________________________________________________________________________________________________________________________
+|                                                        Assignment 3                                                       |
+|  Build the Image classification model by dividing the model into following 4 stages:                                      |
+|     a. Loading and preprocessing the image data                                                                           |
+|     b. Defining the model’s architecture                                                                                  |
+|     c. Training the model                                                                                                 |
+|     d. Estimating the model’s performance                                                                                 |
+|___________________________________________________________________________________________________________________________|
+
+#importing
+import numpy as np
+import pandas as pd
+import random
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from sklearn.metrics import accuracy_score
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Flatten, Conv2D, Dense, MaxPooling2D
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.utils import to_categorical
+import os
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
+
+
+mnist = tf.keras.datasets.mnist
+(X_train, y_train), (X_test, y_test) = mnist.load_data()
+
+
+
+print(X_train.shape)
+
+
+
+X_train[0].min(), X_train[0].max()
+
+
+
+#Normalization
+X_train = X_train /255
+X_test = X_test / 255.0
+X_train[0].min(), X_train[0].max()
+
+
+
+def plot_digit(image, digit, plt, i):
+    plt.subplot(4, 5, i + 1)
+    plt.imshow(image, cmap=plt.get_cmap('gray'))
+    plt.title(f"Digit: {digit}")
+    plt.xticks([])
+    plt.yticks([])
+plt.figure(figsize=(16, 10))
+for i in range(20):
+    plot_digit(X_train[i], y_train[i], plt, i)   
+plt.show()
+
+
+
+X_train = X_train.reshape((X_train.shape + (1,)))
+X_test = X_test.reshape((X_test.shape + (1,)))
+
+
+
+y_train[0:20]
+
+
+
+model = Sequential([
+    Conv2D(32, (3, 3), activation="relu", input_shape=(28, 28, 1)),
+    MaxPooling2D((2, 2)),
+    Flatten(),
+    Dense(100, activation="relu"),
+    Dense(10, activation="softmax")
+])
+
+
+
+optimizer = SGD(learning_rate=0.01, momentum=0.9)
+model.compile(
+    optimizer=optimizer, 
+    loss="sparse_categorical_crossentropy", 
+    metrics=["accuracy"]
+)
+model.summary()
+
+
+
+model.fit(X_train, y_train,validation_data=(X_test,y_test),epochs=10)
+
+
+
+plt.figure(figsize=(16, 10))
+for i in range(20):
+    image = random.choice(X_test).squeeze()
+    digit = np.argmax(model.predict(image.reshape((1, 28, 28, 1)))[0], axis=-1)
+    plot_digit(image, digit, plt, i)
+plt.show()
+
+
+
+predictions = np.argmax(model.predict(X_test), axis=-1)
+accuracy_score(y_test, predictions)
+
+
+
+n=random.randint(0,9999)
+plt.imshow(X_test[n])
+plt.show()
+
+
+
+predicted_value=model.predict(X_test)
+print("Handwritten number in the image is= %d" %np.argmax(predicted_value[n]))
+
+
+
+score = model.evaluate(X_test, y_test, verbose=0)
+print('Test loss:', score[0]) #Test loss: 0.0296396646054
+print('Test accuracy:', score[1])
+
+
+-----------------------------------------------------------------------------------------------------------------------------
+____________________________________________________________________________________________________________________________
+|                                                        Assignment 4                                                       |
+| Use Autoencoder to implement anomaly detection. Build the model by using:                                                 |
+|     a. Import required libraries                                                                                          |
+|     b. Upload / access the dataset                                                                                        |
+|     c. Encoder converts it into latent representation                                                                     |
+|     d. Decoder networks convert it back to the original input                                                             |
+|     e. Compile the models with Optimizer, Loss, and Evaluation Metrics                                                    |
+|___________________________________________________________________________________________________________________________|
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import tensorflow as tf
+from sklearn.metrics import (accuracy_score, confusion_matrix, precision_score,
+                             recall_score)
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+
+RANDOM_SEED = 2021
+TEST_PCT = 0.3
+LABELS = ["Normal","Fraud"]
+
+
+
+dataset = pd.read_csv("creditcard.csv")
+
+
+
+#check for any null values
+print("Any nulls in the dataset",dataset.isnull().values.any())
+print('-------')
+print("No. of unique labels",len(dataset['Class'].unique()))
+print("Label values",dataset.Class.unique())
+
+#0 is for normal credit card transcation
+#1 is for fraudulent credit card transcation
+
+
+
+print('-------')
+print("Break down of Normal and Fraud Transcations")
+print(pd.value_counts(dataset['Class'],sort=True))
+
+
+
+
+#visualizing the imbalanced dataset
+count_classes = pd.value_counts(dataset['Class'],sort=True)
+count_classes.plot(kind='bar',rot=0)
+plt.xticks(range(len(dataset['Class'].unique())),dataset.Class.unique())
+plt.title("Frequency by observation number")
+plt.xlabel("Class")
+plt.ylabel("Number of Observations")
+
+
+
+
+#Save the normal and fradulent transcations in seperate dataframe
+normal_dataset = dataset[dataset.Class == 0]
+fraud_dataset = dataset[dataset.Class == 1]
+
+#Visualize transcation amounts for normal and fraudulent transcations
+bins = np.linspace(200,2500,100)
+plt.hist(normal_dataset.Amount,bins=bins,alpha=1,density=True,label='Normal')
+plt.hist(fraud_dataset.Amount,bins=bins,alpha=0.5,density=True,label='Fraud')
+plt.legend(loc='upper right')
+plt.title("Transcation Amount vs Percentage of Transcations")
+plt.xlabel("Transcation Amount (USD)")
+plt.ylabel("Percentage of Transcations")
+plt.show()
+
+
+
+dataset
+
+
+
+sc = StandardScaler()
+dataset['Time'] = sc.fit_transform(dataset['Time'].values.reshape(-1,1))
+dataset['Amount'] = sc.fit_transform(dataset['Amount'].values.reshape(-1,1))
+
+
+
+
+raw_data = dataset.values
+#The last element contains if the transcation is normal which is represented by 0 and if fraud then 1
+labels = raw_data[:,-1]
+
+#The other data points are the electrocadriogram data
+data = raw_data[:,0:-1]
+
+train_data,test_data,train_labels,test_labels = train_test_split(data,labels,test_size = 0.2,random_state =2021)
+
+
+
+
+#Use only normal transactions to train the Autoencoder.
+min_val = tf.reduce_min(train_data)
+max_val = tf.reduce_max(train_data)
+
+train_data = (train_data - min_val) / (max_val - min_val)
+test_data = (test_data - min_val) / (max_val - min_val)
+
+train_data = tf.cast(train_data,tf.float32)
+test_data = tf.cast(test_data,tf.float32)
+
+
+
+
+train_labels = train_labels.astype(bool)
+test_labels = test_labels.astype(bool)
+
+#Creating normal and fraud datasets
+normal_train_data = train_data[~train_labels]
+normal_test_data = test_data[~test_labels]
+
+fraud_train_data = train_data[train_labels]
+fraud_test_data = test_data[test_labels]
+print("No. of records in Fraud Train Data=",len(fraud_train_data))
+print("No. of records in Normal Train Data=",len(normal_train_data))
+print("No. of records in Fraud Test Data=",len(fraud_test_data))
+print("No. of records in Normal Test Data=",len(normal_test_data))
+
+
+
+
+#Set the training parameter values
+nb_epoch = 50
+batch_size = 64
+input_dim = normal_train_data.shape[1]
+#num of columns,30
+encoding_dim = 14
+hidden_dim1 = int(encoding_dim / 2)
+hidden_dim2 = 4
+learning_rate = 1e-7
+
+
+
+#Create the Autoencoder
+#input layer
+input_layer = tf.keras.layers.Input(shape=(input_dim,))
+
+#Encoder
+encoder = tf.keras.layers.Dense(encoding_dim,activation="tanh",activity_regularizer = tf.keras.regularizers.l2(learning_rate))(input_layer)
+encoder = tf.keras.layers.Dropout(0.2)(encoder)
+encoder = tf.keras.layers.Dense(hidden_dim1,activation='relu')(encoder)
+encoder = tf.keras.layers.Dense(hidden_dim2,activation=tf.nn.leaky_relu)(encoder)
+
+#Decoder
+decoder = tf.keras.layers.Dense(hidden_dim1,activation='relu')(encoder)
+decoder = tf.keras.layers.Dropout(0.2)(decoder)
+decoder = tf.keras.layers.Dense(encoding_dim,activation='relu')(decoder)
+decoder = tf.keras.layers.Dense(input_dim,activation='tanh')(decoder)
+
+#Autoencoder
+autoencoder = tf.keras.Model(inputs = input_layer,outputs = decoder)
+autoencoder.summary()
+
+
+
+
+#Define the callbacks for checkpoints and early stopping
+cp = tf.keras.callbacks.ModelCheckpoint(filepath="autoencoder_fraud.h5",mode='min',monitor='val_loss',verbose=2,save_best_only=True)
+#Define our early stopping
+early_stop = tf.keras.callbacks.EarlyStopping(
+                monitor='val_loss',
+                min_delta=0.0001,
+                patience=10,
+                verbose=11,
+                mode='min',
+                restore_best_weights=True
+)
+
+
+
+
+autoencoder.compile(metrics=['accuracy'],loss= 'mean_squared_error',optimizer='adam')
+
+
+
+
+history = autoencoder.fit(normal_train_data,normal_train_data,epochs = nb_epoch,
+                         batch_size = batch_size,shuffle = True,
+                         validation_data = (test_data,test_data),
+                         verbose=1,
+                         callbacks = [cp,early_stop]).history
+
+
+
+
+#Plot training and test loss
+plt.plot(history['loss'],linewidth = 2,label = 'Train')
+plt.plot(history['val_loss'],linewidth = 2,label = 'Test')
+plt.legend(loc='upper right')
+plt.title('Model Loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+
+#plt.ylim(ymin=0.70,ymax=1)
+
+plt.show()
+
+
+
+
+test_x_predictions = autoencoder.predict(test_data)
+mse = np.mean(np.power(test_data - test_x_predictions, 2),axis = 1)
+error_df = pd.DataFrame({'Reconstruction_error':mse,
+                         'True_class':test_labels})
+
+
+
+
+threshold_fixed = 50
+groups = error_df.groupby('True_class')
+fig,ax = plt.subplots()
+
+for name,group in groups:
+        ax.plot(group.index,group.Reconstruction_error,marker='o',ms = 3.5,linestyle='',
+                label = "Fraud" if  name==1 else "Normal")
+ax.hlines(threshold_fixed,ax.get_xlim()[0],ax.get_xlim()[1],colors="r",zorder=100,label="Threshold")
+ax.legend()
+plt.title("Reconstructions error for normal and fraud data")
+plt.ylabel("Reconstruction error")
+plt.xlabel("Data point index")
+plt.show()
+
+
+
+
+#Evaluating the performance of the anomaly detection
+threshold_fixed = 52
+pred_y = [1 if e > threshold_fixed else 0 
+          for e in 
+        error_df.Reconstruction_error.values]
+error_df['pred'] = pred_y
+conf_matrix = confusion_matrix(error_df.True_class,pred_y)
+
+plt.figure(figsize = (4,4))
+sns.heatmap(conf_matrix,xticklabels = LABELS,yticklabels = LABELS,annot = True,fmt="d")
+plt.title("Confusion matrix")
+plt.ylabel("True class")
+plt.xlabel("Predicted class")
+plt.show()
+
+#Print Accuracy,Precision and Recall
+print("Accuracy :",accuracy_score(error_df['True_class'],error_df['pred']))
+print("Recall :",recall_score(error_df['True_class'],error_df['pred']))
+print("Precision :",precision_score(error_df['True_class'],error_df['pred']))
+
+-----------------------------------------------------------------------------------------------------------------------------
+____________________________________________________________________________________________________________________________
+|                                                        Assignment 5                                                       |
+| Implement the Continuous Bag of Words (CBOW) Model. Stages can be:                                                        |
+|    a. Data preparation                                                                                                    |
+|    b. Generate training data                                                                                              |
+|    c. Train model                                                                                                         |
+|    d. Output                                                                                                              |
+|___________________________________________________________________________________________________________________________|
+import matplotlib.pyplot as plt
+import seaborn as sns
+import matplotlib as mpl
+import matplotlib.pylab as pylab
+import numpy as np
+%matplotlib inline
+
+
+#Data Prepration
+import re
+
+
+
+sentences = """We are about to study the idea of a computational process.
+Computational processes are abstract beings that inhabit computers.
+As they evolve, processes manipulate other abstract things called data.
+The evolution of a process is directed by a pattern of rules
+called a program. People create programs to direct processes. In effect,
+we conjure the spirits of the computer with our spells."""
+
+
+
+
+# remove special characters
+sentences = re.sub('[^A-Za-z0-9]+', ' ', sentences)
+
+# remove 1 letter words
+sentences = re.sub(r'(?:^| )\w(?:$| )', ' ', sentences).strip()
+
+# lower all characters
+sentences = sentences.lower()
+
+
+
+
+words = sentences.split()
+vocab = set(words)
+
+
+
+vocab_size = len(vocab)
+embed_dim = 10
+context_size = 2
+
+
+
+word_to_ix = {word: i for i, word in enumerate(vocab)}
+ix_to_word = {i: word for i, word in enumerate(vocab)}
+
+
+
+
+# data - [(context), target]
+
+data = []
+for i in range(2, len(words) - 2):
+    context = [words[i - 2], words[i - 1], words[i + 1], words[i + 2]]
+    target = words[i]
+    data.append((context, target))
+print(data[:5])
+
+
+
+
+embeddings =  np.random.random_sample((vocab_size, embed_dim))
+
+
+
+def linear(m, theta):
+    w = theta
+    return m.dot(w)
+
+
+
+def log_softmax(x):
+    e_x = np.exp(x - np.max(x))
+    return np.log(e_x / e_x.sum())
+
+
+
+
+def NLLLoss(logs, targets):
+    out = logs[range(len(targets)), targets]
+    return -out.sum()/len(out)
+
+
+
+
+def log_softmax_crossentropy_with_logits(logits,target):
+
+    out = np.zeros_like(logits)
+    out[np.arange(len(logits)),target] = 1
+    
+    softmax = np.exp(logits) / np.exp(logits).sum(axis=-1,keepdims=True)
+    
+    return (- out + softmax) / logits.shape[0]
+
+
+
+
+def forward(context_idxs, theta):
+    m = embeddings[context_idxs].reshape(1, -1)
+    n = linear(m, theta)
+    o = log_softmax(n)
+    
+    return m, n, o
+
+
+
+
+def backward(preds, theta, target_idxs):
+    m, n, o = preds
+    
+    dlog = log_softmax_crossentropy_with_logits(n, target_idxs)
+    dw = m.T.dot(dlog)
+    
+    return dw
+
+
+
+
+def optimize(theta, grad, lr=0.03):
+    theta -= grad * lr
+    return theta
+
+
+
+
+#Genrate training data
+
+theta = np.random.uniform(-1, 1, (2 * context_size * embed_dim, vocab_size))
+
+
+
+
+epoch_losses = {}
+
+for epoch in range(80):
+
+    losses =  []
+
+    for context, target in data:
+        context_idxs = np.array([word_to_ix[w] for w in context])
+        preds = forward(context_idxs, theta)
+
+        target_idxs = np.array([word_to_ix[target]])
+        loss = NLLLoss(preds[-1], target_idxs)
+
+        losses.append(loss)
+
+        grad = backward(preds, theta, target_idxs)
+        theta = optimize(theta, grad, lr=0.03)
+        
+     
+    epoch_losses[epoch] = losses
+
+
+
+ix = np.arange(0,80)
+
+fig = plt.figure()
+fig.suptitle('Epoch/Losses', fontsize=20)
+plt.plot(ix,[epoch_losses[i][0] for i in ix])
+plt.xlabel('Epochs', fontsize=12)
+plt.ylabel('Losses', fontsize=12)
+
+
+
+
+def predict(words):
+    context_idxs = np.array([word_to_ix[w] for w in words])
+    preds = forward(context_idxs, theta)
+    word = ix_to_word[np.argmax(preds[-1])]
+    
+    return word
+
+
+
+
+# (['we', 'are', 'to', 'study'], 'about')
+predict(['we', 'are', 'to', 'study'])
+
+
+
+def accuracy():
+    wrong = 0
+
+    for context, target in data:
+        if(predict(context) != target):
+            wrong += 1
+            
+    return (1 - (wrong / len(data)))
+
+
+
+accuracy()
+-----------------------------------------------------------------------------------------------------------------------------
+____________________________________________________________________________________________________________________________
+|                                                        Assignment 6                                                       |
+| Object detection using Transfer Learning of CNN architectures                                                             |
+|     a. Load in a pre-trained CNN model trained on a large dataset                                                         |
+|     b. Freeze parameters (weights) in model’s lower convolutional layers                                                  |
+|     c. Add custom classifier with several layers of trainable parameters to model                                         |
+|     d. Train classifier layers on training data available for task                                                        |
+|     e. Fine-tune hyper parameters and unfreeze more layers as needed                                                      |
+|___________________________________________________________________________________________________________________________|
+import tensorflow_datasets as tfds
+import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
+
+
+
+## Loading images and labels
+(train_ds, train_labels), (test_ds, test_labels) = tfds.load("tf_flowers",
+    split=["train[:70%]", "train[:30%]"], ## Train test split
+    batch_size=-1,
+    as_supervised=True,  # Include labels
+)
+
+
+
+### Image Preprocessing
+
+## check existing image size
+train_ds[0].shape
+
+
+
+## Resizing images
+train_ds = tf.image.resize(train_ds, (150, 150))
+test_ds = tf.image.resize(test_ds, (150, 150))
+
+
+
+## Transforming labels to correct format
+train_labels = to_categorical(train_labels, num_classes=5)
+test_labels = to_categorical(test_labels, num_classes=5)
+
+
+
+### Use Pretrained VGG16 Image Classification model
+
+# **Load a pre-trained CNN model trained on a large dataset**
+
+
+from tensorflow.keras.applications.vgg16 import VGG16
+from tensorflow.keras.applications.vgg16 import preprocess_input
+
+
+
+## Loading VGG16 model
+base_model = VGG16(weights="imagenet", include_top=False, input_shape=train_ds[0].shape)
+
+
+
+
+## will not train base mode
+# Freeze Parameters in model's lower convolutional layers
+base_model.trainable = False 
+
+
+
+
+## Preprocessing input
+train_ds = preprocess_input(train_ds) 
+test_ds = preprocess_input(test_ds)
+
+
+
+
+## model details
+base_model.summary()
+
+
+
+**Add custom classifier with two dense layers of trainable parameters to model**
+
+#add our layers on top of this model
+from tensorflow.keras import layers, models
+
+flatten_layer = layers.Flatten()
+dense_layer_1 = layers.Dense(50, activation='relu')
+dense_layer_2 = layers.Dense(20, activation='relu')
+prediction_layer = layers.Dense(5, activation='softmax')
+
+
+model = models.Sequential([
+    base_model,
+    flatten_layer,
+    dense_layer_1,
+    dense_layer_2,
+    prediction_layer
+])
+
+
+
+
+**Train classifier layers on training data available for task**
+
+from tensorflow.keras.callbacks import EarlyStopping
+
+model.compile(
+    optimizer='adam',
+    loss='categorical_crossentropy',
+    metrics=['accuracy'],
+)
+
+
+
+
+es = EarlyStopping(monitor='val_accuracy', mode='max', patience=5,  restore_best_weights=True)
+
+
+
+history=model.fit(train_ds, train_labels, epochs=50, validation_split=0.2, batch_size=32, callbacks=[es])
+
+
+
+los,accurac=model.evaluate(test_ds,test_labels)
+print("Loss: ",los,"Accuracy: ", accurac)
+
+
+
+
+import matplotlib.pyplot as plt
+plt.plot(history.history['accuracy'])
+plt.title('ACCURACY')
+plt.ylabel('accuracy')
+plt.xlabel('epoch')
+plt.legend(['train'],loc='upper left')
+plt.show()
+
+
+
+
+import numpy as np
+import pandas as pd
+y_pred = model.predict(test_ds)
+y_classes = [np.argmax(element) for element in y_pred]
+#to_categorical(y_classes, num_classes=5)
+#to_categorical(test_labels, num_classes=5)
+print(y_classes[:10])
+print("\nTest")
+print(test_labels[:10])
+-----------------------------------------------------------------------------------------------------------------------------
